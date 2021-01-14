@@ -25,7 +25,7 @@ use crate::{
 	wasm::{PrefabWasmModule, env_def::ImportSatisfyCheck},
 };
 use parity_wasm::elements::{self, Internal, External, MemoryType, Type, ValueType};
-use pwasm_utils;
+use sp_runtime::traits::Hash;
 use sp_std::prelude::*;
 
 /// Currently, all imported functions must be located inside this module. We might support
@@ -418,11 +418,18 @@ fn get_memory_limits<T: Config>(module: Option<&MemoryType>, schedule: &Schedule
 /// - all imported functions from the external environment matches defined by `env` module,
 ///
 /// The preprocessing includes injecting code for gas metering and metering the height of stack.
-pub fn prepare_contract<C: ImportSatisfyCheck, T: Config>(
-	original_code: &[u8],
+pub fn prepare_contract<T: Config>(
+	original_code: Vec<u8>,
 	schedule: &Schedule<T>,
-) -> Result<PrefabWasmModule, &'static str> {
-	let mut contract_module = ContractModule::new(original_code, schedule)?;
+) -> Result<PrefabWasmModule<T>, &'static str> {
+	do_preparation::<super::runtime::Env, T>(original_code, schedule)
+}
+
+fn do_preparation<C: ImportSatisfyCheck, T: Config>(
+	original_code: Vec<u8>,
+	schedule: &Schedule<T>,
+) -> Result<PrefabWasmModule<T>, &'static str> {
+	let mut contract_module = ContractModule::new(&original_code, schedule)?;
 	contract_module.scan_exports()?;
 	contract_module.ensure_no_internal_memory()?;
 	contract_module.ensure_table_size_limit(schedule.limits.table_size)?;
@@ -448,8 +455,12 @@ pub fn prepare_contract<C: ImportSatisfyCheck, T: Config>(
 		maximum: memory_limits.1,
 		_reserved: None,
 		code: contract_module.into_wasm_code()?,
+		refcount: 1,
+		code_hash: T::Hashing::hash(&original_code),
+		original_code: Some(original_code),
 	})
 }
+
 
 /// Alternate (possibly unsafe) preparation functions used only for benchmarking.
 ///
@@ -493,7 +504,7 @@ mod tests {
 	use std::fmt;
 	use assert_matches::assert_matches;
 
-	impl fmt::Debug for PrefabWasmModule {
+	impl fmt::Debug for PrefabWasmModule<crate::tests::Test> {
 		fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 			write!(f, "PreparedContract {{ .. }}")
 		}
@@ -534,7 +545,7 @@ mod tests {
 					},
 					.. Default::default()
 				};
-				let r = prepare_contract::<env::Test, crate::tests::Test>(wasm.as_ref(), &schedule);
+				let r = do_preparation::<env::Test, crate::tests::Test>(wasm, &schedule);
 				assert_matches!(r, $($expected)*);
 			}
 		};
@@ -945,7 +956,7 @@ mod tests {
 			).unwrap();
 			let mut schedule = Schedule::default();
 			schedule.enable_println = true;
-			let r = prepare_contract::<env::Test, crate::tests::Test>(wasm.as_ref(), &schedule);
+			let r = do_preparation::<env::Test, crate::tests::Test>(wasm, &schedule);
 			assert_matches!(r, Ok(_));
 		}
 	}

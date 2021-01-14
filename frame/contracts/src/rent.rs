@@ -261,6 +261,7 @@ where
 				);
 				let tombstone_info = ContractInfo::Tombstone(tombstone);
 				<ContractInfoOf<T>>::insert(account, &tombstone_info);
+				crate::wasm::remove_user::<T>(alive_contract_info.code_hash);
 				<Module<T>>::deposit_event(RawEvent::Evicted(account.clone(), true));
 				Ok(Some(tombstone_info))
 			}
@@ -418,6 +419,7 @@ where
 	/// Restores the destination account using the origin as prototype.
 	///
 	/// The restoration will be performed iff:
+	/// - the supplied code_hash does still exist on-chain
 	/// - origin exists and is alive,
 	/// - the origin's storage is not written in the current block
 	/// - the restored account has tombstone
@@ -455,6 +457,9 @@ where
 			origin_contract.last_write
 		};
 
+		// Fails if the code hash does not exist on chain
+		crate::wasm::add_user::<T>(code_hash)?;
+
 		// We are allowed to eagerly modify storage even though the function can
 		// fail later due to tombstones not matching. This is because the restoration
 		// is always called from a contract and therefore in a storage transaction.
@@ -483,6 +488,7 @@ where
 		origin_contract.storage_size -= bytes_taken;
 
 		<ContractInfoOf<T>>::remove(&origin);
+		crate::wasm::remove_user::<T>(origin_contract.code_hash);
 		<ContractInfoOf<T>>::insert(&dest, ContractInfo::Alive(AliveContractInfo::<T> {
 			trie_id: origin_contract.trie_id,
 			storage_size: origin_contract.storage_size,

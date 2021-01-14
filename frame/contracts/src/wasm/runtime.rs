@@ -882,7 +882,7 @@ define_env!(Env, <E: Ext>,
 			match nested_meter {
 				Some(nested_meter) => {
 					ext.instantiate(
-						&code_hash,
+						code_hash,
 						value,
 						nested_meter,
 						input_data,
