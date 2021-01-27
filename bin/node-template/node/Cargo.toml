@@ -18,7 +18,7 @@ name = "node-template"
 [dependencies]
 structopt = "0.3.8"
 
-tssrs = { package = "substrate-example-tssrs", path = "/Users/felipe/dev/ankr/substrate-remote-signer-example/lib", features = ["client"] }
+rmt-keystore = { package = "substrate-example-tssrs", path = "../rmt-keystore", features = ["client"] }
 
 sc-cli = { version = "0.8.0", path = "../../../client/cli", features = ["wasmtime"] }
 sp-core = { version = "2.0.0", path = "../../../primitives/core" }
