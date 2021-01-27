@@ -10,10 +10,9 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sp_consensus_aura::sr25519::{AuthorityPair as AuraPair};
 use sc_finality_grandpa::SharedVoterState;
-/* remoteKeystore */
-// use sc_keystore::LocalKeystore;
-use rmt_keystore::client::RemoteKeystore;
 use sc_telemetry::TelemetrySpan;
+// Remote Keystore
+use rmt_keystore::client::RemoteKeystore;
 
 // Our native executor instance.
 native_executor_instance!(
@@ -93,9 +92,9 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 	})
 }
 
-/* remoteKeystore */
+// Remote Keystore
 fn remote_keystore(url: &String) -> Result<Arc<RemoteKeystore>, String> {
-	if url.starts_with("tssrs+") {
+	if url.starts_with("rmt+") {
 		RemoteKeystore::open(url[6..].to_string(), None)
 			.map(Arc::new)
 	} else {
