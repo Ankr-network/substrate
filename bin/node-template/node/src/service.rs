@@ -10,7 +10,9 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sp_consensus_aura::sr25519::{AuthorityPair as AuraPair};
 use sc_finality_grandpa::SharedVoterState;
-use sc_keystore::LocalKeystore;
+/* remoteKeystore */
+// use sc_keystore::LocalKeystore;
+use tssrs::client::RemoteKeystore;
 
 // Our native executor instance.
 native_executor_instance!(
@@ -83,11 +85,14 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 	})
 }
 
-fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
-	// FIXME: here would the concrete keystore be built,
-	//        must return a concrete type (NOT `LocalKeystore`) that
-	//        implements `CryptoStore` and `SyncCryptoStore`
-	Err("Remote Keystore not supported.")
+/* remoteKeystore */
+fn remote_keystore(url: &String) -> Result<Arc<RemoteKeystore>, String> {
+	if url.starts_with("tssrs+") {
+		RemoteKeystore::open(url[6..].to_string(), None)
+			.map(Arc::new)
+	} else {
+		Err("Remote Keystore not supported.".to_owned())
+	}
 }
 
 /// Builds a new service for a full client.
