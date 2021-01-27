@@ -12,7 +12,7 @@ use sp_consensus_aura::sr25519::{AuthorityPair as AuraPair};
 use sc_finality_grandpa::SharedVoterState;
 /* remoteKeystore */
 // use sc_keystore::LocalKeystore;
-use rmt-keystore::client::RemoteKeystore;
+use rmt_keystore::client::RemoteKeystore;
 use sc_telemetry::TelemetrySpan;
 
 // Our native executor instance.

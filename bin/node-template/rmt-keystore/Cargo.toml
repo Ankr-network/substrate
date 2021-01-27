@@ -1,5 +1,5 @@
 [package]
-name = "rmt-keystore"
+name = "rmt_keystore"
 version = "0.1.0"
 authors = ["Ankr"]
 edition = "2021"
