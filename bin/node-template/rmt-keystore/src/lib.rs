@@ -42,9 +42,6 @@ use sp_keystore::{
 	vrf::{VRFSignature, VRFTranscriptData, VRFTranscriptValue},
 };
 
-#[cfg(feature = "server")]
-pub mod server;
-
 #[cfg(feature = "client")]
 pub mod client;
 
@@ -158,6 +155,7 @@ pub trait RemoteSignerApi {
 	///
 	/// Returns the SCALE encoded signature if key is found & supported,
 	/// an error otherwise.
+	/// ToDo add raw msg to the payload
 	#[rpc(name="signer_sign_with", returns = "Vec<u8>")]
 	fn sign_with(
 		&self,
