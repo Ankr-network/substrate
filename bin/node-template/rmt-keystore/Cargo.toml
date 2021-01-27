@@ -2,7 +2,7 @@
 name = "rmt_keystore"
 version = "0.1.0"
 authors = ["Ankr"]
-edition = "2021"
+edition = "2018"
 publish = false
 license = "GPL-3.0-or-later"
 homepage = "http://ankr.com/"
