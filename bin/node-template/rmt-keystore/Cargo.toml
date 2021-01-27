@@ -36,11 +36,8 @@ tokio = { version = "0.2", features = ["full"] }
 serde_json = "1.0.57"
 
 [features]
-default = ["server", "client"]
-server = [
-    "sp-consensus-babe",
-    "sc-keystore",
-]
+default = ["client"]
+
 client = [
     "async-trait",
     "tokio",
