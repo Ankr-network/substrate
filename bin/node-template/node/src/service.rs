@@ -38,7 +38,6 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 			AuraPair
 		>,
 		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-		Option<TelemetrySpan>,
 	)
 >, ServiceError> {
 	if config.keystore_remote.is_some() {
@@ -47,7 +46,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 	}
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
-	let (client, backend, keystore_container, task_manager, telemetry_span) =
+	let (client, backend, keystore_container, task_manager) =
 		sc_service::new_full_parts::<Block, RuntimeApi, Executor>(&config)?;
 	let client = Arc::new(client);
 
@@ -55,6 +54,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 
 	let transaction_pool = sc_transaction_pool::BasicPool::new_full(
 		config.transaction_pool.clone(),
+		config.role.is_authority().into(),
 		config.prometheus_registry(),
 		task_manager.spawn_handle(),
 		client.clone(),
@@ -88,7 +88,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 		select_chain,
 		transaction_pool,
 		inherent_data_providers,
-		other: (aura_block_import, grandpa_link, telemetry_span),
+		other: (aura_block_import, grandpa_link),
 	})
 }
 
@@ -113,7 +113,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		select_chain,
 		transaction_pool,
 		inherent_data_providers,
-		other: (block_import, grandpa_link, telemetry_span),
+		other: (block_import, grandpa_link),
 	} = new_partial(&config)?;
 
 	if let Some(url) = &config.keystore_remote {
@@ -181,7 +181,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			network_status_sinks,
 			system_rpc_tx,
 			config,
-			telemetry_span,
 		},
 	)?;
 
@@ -264,7 +263,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 /// Builds a new service for a light client.
 pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError> {
-	let (client, backend, keystore_container, mut task_manager, on_demand, telemetry_span) =
+	let (client, backend, keystore_container, mut task_manager, on_demand) =
 		sc_service::new_light_parts::<Block, RuntimeApi, Executor>(&config)?;
 
 	config.network.extra_sets.push(sc_finality_grandpa::grandpa_peers_set_config());
@@ -331,7 +330,6 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 		network,
 		network_status_sinks,
 		system_rpc_tx,
-		telemetry_span,
 	})?;
 
 	network_starter.start_network();
