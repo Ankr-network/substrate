@@ -42,6 +42,9 @@ use sp_keystore::{
 	vrf::{VRFSignature, VRFTranscriptData, VRFTranscriptValue},
 };
 
+#[cfg(feature = "server")]
+pub mod server;
+
 #[cfg(feature = "client")]
 pub mod client;
 

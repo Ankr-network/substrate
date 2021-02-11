@@ -16,11 +16,11 @@ jsonrpc-derive = "14.2.1"
 jsonrpc-core = "14.2.0"
 jsonrpc-core-client = "14.0"
 jsonrpc-client-transports = { version = "14.2.1", optional = true }
-sp-core = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-consensus-babe = { version = "0.8.0", git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
-sp-application-crypto = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "master" }
-sc-keystore = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "master", optional = true }
-sp-keystore = { version = "0.8.0", git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-core = { version = "2.0.0", git = "https://github.com/paritytech/substrate", tag = "v2.0.0" }
+sp-consensus-babe = { version = "0.8.0", git = "https://github.com/paritytech/substrate", tag = "v2.0.0", optional = true }
+sp-application-crypto = { version = "2.0.0", git = "https://github.com/paritytech/substrate", tag = "v2.0.0" }
+sc-keystore = { version = "2.0.0", git = "https://github.com/paritytech/substrate", tag = "v2.0.0", optional = true }
+sp-keystore = { version = "0.8.0", path = "../../../primitives/keystore" }
 
 futures = { version = "0.3.5", features = ["compat"] }
 parking_lot = "0.11"
@@ -36,8 +36,11 @@ tokio = { version = "0.2", features = ["full"] }
 serde_json = "1.0.57"
 
 [features]
-default = ["client"]
-
+default = ["server", "client"]
+server = [
+    "sp-consensus-babe",
+    "sc-keystore",
+]
 client = [
     "async-trait",
     "tokio",
