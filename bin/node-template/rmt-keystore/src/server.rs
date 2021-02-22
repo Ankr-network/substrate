@@ -303,11 +303,11 @@ enum KeystoreResponse {
 /// any (async) [`CryptoStore`] for you. Allowing you to easily
 /// wrap any existing CryptoStore implementation and just expose
 /// that over the API.
-pub struct RemoteSignerServer {
+pub struct GenericRemoteSignerServer {
 	sender: UnboundedSender<KeystoreRequest>,
 }
 
-impl RemoteSignerServer {
+impl GenericRemoteSignerServer {
 
 	/// Construct a generic remote sign server for the given crypto store.
 	/// Returns the JSONRpcHanlder (`Self`) as well as a `KeystoreReciver`–
@@ -315,7 +315,7 @@ impl RemoteSignerServer {
 	/// run to completion – see the `remote-sign-server` for an example usage.
 	pub fn proxy<Store: CryptoStore + 'static>(store: Store) -> (Self, KeystoreReceiver<Store>) {
 		let (sender, receiver) = unbounded::<KeystoreRequest>();
-		(RemoteSignerServer { sender }, KeystoreReceiver::new(store, receiver))
+		(GenericRemoteSignerServer { sender }, KeystoreReceiver::new(store, receiver))
 	}
 
 
@@ -334,7 +334,7 @@ impl RemoteSignerServer {
 	}
 }
 
-impl crate::RemoteSignerApi for RemoteSignerServer {
+impl crate::RemoteSignerApi for GenericRemoteSignerServer {
 
 	fn sr25519_public_keys(&self, id: KeyTypeId) -> BoxFuture<Vec<sr25519::Public>> {
 		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id));
@@ -559,7 +559,7 @@ mod tests {
 			assert_eq!(SyncCryptoStore::sr25519_public_keys(&keystore, TEST_TK).len(), 3);
 		}
 
-		let (server, mut runner) = RemoteSignerServer::proxy(keystore);
+		let (server, mut runner) = GenericRemoteSignerServer::proxy(keystore);
 
 		tokio::task::spawn(async move {
 			for _ in 0..msg_count {
