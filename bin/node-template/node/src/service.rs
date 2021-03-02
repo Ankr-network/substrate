@@ -95,7 +95,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 // Remote Keystore
 fn remote_keystore(url: &String) -> Result<Arc<RemoteKeystore>, String> {
 	if url.starts_with("rmt+") {
-		RemoteKeystore::open(url[6..].to_string(), None)
+		RemoteKeystore::open(url[4..].to_string(), None)
 			.map(Arc::new)
 	} else {
 		Err("Remote Keystore not supported.".to_owned())
