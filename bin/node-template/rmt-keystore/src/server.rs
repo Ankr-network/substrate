@@ -22,6 +22,7 @@ use std::{
 };
 use sp_core::{
 	crypto::{
+		key_types,
 		CryptoTypePublicPair,
 		KeyTypeId,
 	},
@@ -35,6 +36,7 @@ use sp_keystore::{
 };
 
 use jsonrpc_core::{BoxFuture, Error as RpcError};
+use serde_json::{Value};
 
 use futures::{
 	channel::{
@@ -52,7 +54,7 @@ use tonic::{transport::Server, Request, Response, Status};
 
 use blockchain_signer::blockchain_signer_server::{BlockchainSigner, BlockchainSignerServer};
 use blockchain_signer::{GetValidatingKeysRequest, GetValidatingKeysReply, SignDataRequest, SignDataReply,
-						SignTransactionRequest, SignTransactionReply, SignVrfRequest, SignVrfReply};
+						SignTransactionRequest, SignTransactionReply, SignVrfRequest, SignVrfReply, BlockchainType};
 
 pub mod blockchain_signer {
 	tonic::include_proto!("com.ankr.staking"); // The string specified here must match the proto package name
@@ -111,7 +113,8 @@ impl<Store: CryptoStore + 'static> KeystoreReceiver<Store> {
 		match request.method {
 			RequestMethod::Sr25519PublicKeys(id) => {
 				Box::pin(async move {
-					let result = store.sr25519_public_keys(id).await;
+					let mut result = store.sr25519_public_keys(id).await;
+					println!("print {:?}",result);
 					let _ = sender.send(KeystoreResponse::Sr25519PublicKeys(result));
 					return store;
 				})
@@ -351,15 +354,23 @@ impl BlockchainSigner for RemoteSignerServer {
 		&self,
 		request: Request<GetValidatingKeysRequest>,
 	) -> Result<Response<GetValidatingKeysReply>, Status> {
-		println!("Got a request: {:?}", request);
+		println!("Got a request: {:?}", request.into_inner());
 
 		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+		let test:Vec<sr25519::Public>;
 
 		let validating_key = vec![blockchain_signer::BlockchainValidatingKey { r#type: 2, public_key: pkey, crypto: 2 }];
 
 		let reply = blockchain_signer::GetValidatingKeysReply {
 			public_keys: validating_key, // We must use .into_inner() as the fields of gRPC requests and responses are private
 		};
+
+		//let id:KeyTypeId = key_types::BABE;
+
+		println!("oi");
+
+		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(key_types::AURA));
 
 		Ok(Response::new(reply)) // Send back our formatted greeting
 	}
@@ -368,7 +379,12 @@ impl BlockchainSigner for RemoteSignerServer {
 		&self,
 		request: Request<SignDataRequest>,
 	) -> Result<Response<SignDataReply>, Status> {
-		println!("Got a request: {:?}", request.into_inner().message);
+		// println!("Got a request: {:?}", request.into_inner().public_key.unwrap().public_key);
+
+		//fails it blockchain != Polkadot
+		assert_eq!(request.into_inner().public_key.unwrap().r#type, 2);
+
+		println!("POLKA!");
 
 		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
