@@ -21,6 +21,7 @@ use std::{
 	task::{Context, Poll}
 };
 use sp_core::{
+	Bytes,
 	crypto::{
 		key_types,
 		CryptoTypePublicPair,
@@ -322,10 +323,6 @@ pub struct RemoteSignerServer {
 
 impl RemoteSignerServer {
 
-	/// Construct a remote sign server for the given crypto store.
-	/// Returns the JSONRpcHanlder (`Self`) as well as a `KeystoreReciver`–
-	/// a stream that does the actual work in an async stream and needs to be
-	/// run to completion – see the `remote-sign-server` for an example usage.
 	pub fn proxy<Store: CryptoStore + 'static>(store: Store) -> (Self, KeystoreReceiver<Store>) {
 		let (sender, receiver) = unbounded::<KeystoreRequest>();
 		(RemoteSignerServer { sender }, KeystoreReceiver::new(store, receiver))
@@ -337,6 +334,8 @@ impl RemoteSignerServer {
 		request: RequestMethod
 	) ->  oneshot::Receiver<KeystoreResponse> {
 		let (request_sender, receiver) = oneshot::channel::<KeystoreResponse>();
+
+		println!("send_request");
 
 		let request = KeystoreRequest {
 			sender: request_sender,
@@ -366,11 +365,9 @@ impl BlockchainSigner for RemoteSignerServer {
 			public_keys: validating_key, // We must use .into_inner() as the fields of gRPC requests and responses are private
 		};
 
-		//let id:KeyTypeId = key_types::BABE;
+		let id:KeyTypeId = key_types::AURA;
 
-		println!("oi");
-
-		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(key_types::AURA));
+		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id));
 
 		Ok(Response::new(reply)) // Send back our formatted greeting
 	}
@@ -393,6 +390,22 @@ impl BlockchainSigner for RemoteSignerServer {
 		// let message = vec![0u8, 1, 2, 3];
 		// let raw_payload = vec![0u8, 4, 5, 6];
 		// let mime_type = vec![0u8, 7, 8, 9];
+
+		// let public_key: Bytes = 0x143fa4ecea108937a2324d36ee4cbce3c6f3a08b0499b276cd7adb7a7631a559;
+		// let key_type: String = "aura".to_string();
+
+		//["0x143fa4ecea108937a2324d36ee4cbce3c6f3a08b0499b276cd7adb7a7631a559","aura"];
+
+		// let key_type = key_type.as_str().try_into().map_err(|_| Error::BadKeyType)?;
+		// Ok(SyncCryptoStore::has_keys(&*self.keystore, &[(public_key.to_vec(), key_type)]));
+
+		// Box::new(self.send_request(RequestMethod::HasKeys(&[(public_key.to_vec(), key_types::AURA)])).map(|response|
+		// 		if let Ok(KeystoreResponse::HasKeys(exists)) = response {
+		// 			Ok(exists)
+		// 		} else {
+		// 			Ok(false)
+		// 		}
+		// 	).boxed().compat());
 
 		let reply = blockchain_signer::SignDataReply {
 			signature: pkey, // We must use .into_inner() as the fields of gRPC requests and responses are private
