@@ -114,8 +114,8 @@ impl<Store: CryptoStore + 'static> KeystoreReceiver<Store> {
 		match request.method {
 			RequestMethod::Sr25519PublicKeys(id) => {
 				Box::pin(async move {
-					let mut result = store.sr25519_public_keys(id).await;
-					println!("print {:?}",result);
+					let result = store.sr25519_public_keys(id).await;
+					println!("print {:?}",result.clone());
 					let _ = sender.send(KeystoreResponse::Sr25519PublicKeys(result));
 					return store;
 				})
@@ -335,8 +335,6 @@ impl RemoteSignerServer {
 	) ->  oneshot::Receiver<KeystoreResponse> {
 		let (request_sender, receiver) = oneshot::channel::<KeystoreResponse>();
 
-		println!("send_request");
-
 		let request = KeystoreRequest {
 			sender: request_sender,
 			method: request,
@@ -357,19 +355,26 @@ impl BlockchainSigner for RemoteSignerServer {
 
 		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-		let test:Vec<sr25519::Public>;
+		let mut vec:Vec<sr25519::Public> = Vec::new();
+
+		let mut test:Vec<sr25519::Public> = Vec::new();
+
+		let id:KeyTypeId = key_types::AURA;
+
+		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id)).await;
+
+			Box::new(receiver.map(|e| match e {
+				Ok(KeystoreResponse::Sr25519PublicKeys(keys)) => Ok(keys),
+				_ => Ok(vec![]),
+			}).boxed().compat());
 
 		let validating_key = vec![blockchain_signer::BlockchainValidatingKey { r#type: 2, public_key: pkey, crypto: 2 }];
 
 		let reply = blockchain_signer::GetValidatingKeysReply {
-			public_keys: validating_key, // We must use .into_inner() as the fields of gRPC requests and responses are private
+			public_keys: validating_key,
 		};
 
-		let id:KeyTypeId = key_types::AURA;
-
-		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id));
-
-		Ok(Response::new(reply)) // Send back our formatted greeting
+		Ok(Response::new(reply))
 	}
 
 	async fn sign_data(
@@ -380,8 +385,6 @@ impl BlockchainSigner for RemoteSignerServer {
 
 		//fails it blockchain != Polkadot
 		assert_eq!(request.into_inner().public_key.unwrap().r#type, 2);
-
-		println!("POLKA!");
 
 		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -408,10 +411,10 @@ impl BlockchainSigner for RemoteSignerServer {
 		// 	).boxed().compat());
 
 		let reply = blockchain_signer::SignDataReply {
-			signature: pkey, // We must use .into_inner() as the fields of gRPC requests and responses are private
+			signature: pkey,
 		};
 
-		Ok(Response::new(reply)) // Send back our formatted greeting
+		Ok(Response::new(reply))
 	}
 
 	async fn sign_transaction(
@@ -422,7 +425,7 @@ impl BlockchainSigner for RemoteSignerServer {
 
 		let reply = blockchain_signer::SignTransactionReply {};
 
-		Ok(Response::new(reply)) // Send back our formatted greeting
+		Ok(Response::new(reply))
 	}
 
 	async fn sign_vrf(
