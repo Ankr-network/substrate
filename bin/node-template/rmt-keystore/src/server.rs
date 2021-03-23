@@ -312,11 +312,6 @@ enum KeystoreResponse {
 	SignWithAll(Result<Vec<Result<Vec<u8>, CryptoStoreError>>, ()>),
 }
 
-
-/// Remote Signer Server implements the server over
-/// any (async) [`CryptoStore`] for you. Allowing you to easily
-/// wrap any existing CryptoStore implementation and just expose
-/// that over the API.
 pub struct RemoteSignerServer {
 	sender: UnboundedSender<KeystoreRequest>,
 }
@@ -362,7 +357,6 @@ impl BlockchainSigner for RemoteSignerServer {
 		let id:KeyTypeId = key_types::AURA;
 
 		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id)).await;
-
 			Box::new(receiver.map(|e| match e {
 				Ok(KeystoreResponse::Sr25519PublicKeys(keys)) => Ok(keys),
 				_ => Ok(vec![]),
