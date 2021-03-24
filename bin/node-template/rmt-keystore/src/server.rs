@@ -346,23 +346,28 @@ impl BlockchainSigner for RemoteSignerServer {
 		&self,
 		request: Request<GetValidatingKeysRequest>,
 	) -> Result<Response<GetValidatingKeysReply>, Status> {
-		println!("Got a request: {:?}", request.into_inner());
+		// println!("Got a request: {:?}", request.into_inner().id);
 
-		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+		let mut validating_key:Vec<_> = Vec::new();
 
-		let mut vec:Vec<sr25519::Public> = Vec::new();
+		let mut id:KeyTypeId = key_types::AURA;
 
-		let mut test:Vec<sr25519::Public> = Vec::new();
+		match request.into_inner().id {
+			1 => id = key_types::BABE,
+			_ => ()
+		}
 
-		let id:KeyTypeId = key_types::AURA;
+		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id)).await.unwrap();
 
-		let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id)).await;
-			Box::new(receiver.map(|e| match e {
-				Ok(KeystoreResponse::Sr25519PublicKeys(keys)) => Ok(keys),
-				_ => Ok(vec![]),
-			}).boxed().compat());
-
-		let validating_key = vec![blockchain_signer::BlockchainValidatingKey { r#type: 2, public_key: pkey, crypto: 2 }];
+		match receiver {
+			KeystoreResponse::Sr25519PublicKeys(key) => {
+				// println!("{:?}", key[0].to_vec());
+				for (pos, e) in key.iter().enumerate() {
+					validating_key.push(blockchain_signer::BlockchainValidatingKey { r#type: 2, public_key: e.to_vec(), crypto: 2 });
+				}
+			},
+			_ => (),
+		};
 
 		let reply = blockchain_signer::GetValidatingKeysReply {
 			public_keys: validating_key,
