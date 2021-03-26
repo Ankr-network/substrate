@@ -62,6 +62,7 @@ pub mod blockchain_signer {
 }
 
 use crate::TransferableVRFTranscriptData;
+use jsonrpc_core::futures::future::result;
 
 impl TryInto<VRFTranscriptData> for TransferableVRFTranscriptData {
 	type Error = String;
@@ -382,8 +383,28 @@ impl BlockchainSigner for RemoteSignerServer {
 	) -> Result<Response<SignDataReply>, Status> {
 		// println!("Got a request: {:?}", request.into_inner().public_key.unwrap().public_key);
 
-		//fails it blockchain != Polkadot
+		//fails if blockchain != Polkadot
 		assert_eq!(request.into_inner().public_key.unwrap().r#type, 2);
+
+		// let receiver = self.send_request(RequestMethod::SignWith(id, key, msg)).await.unwrap();
+		//
+		// match receiver {
+		// 	KeystoreResponse::SignWith(result) => {
+		// 		let ret:Vec<u8> = result;
+		// 		Ok(ret);
+		// 	}
+		// 	_ => (),
+		// }
+
+		// Box::new(self.send_request(RequestMethod::SignWith(id, key, msg)).map(|response|
+		// 	if let KeystoreResponse::SignWith(result) =  response {
+		// 		result.map_err(|_| RpcError::internal_error())
+		// 	} else {
+		// 		Err(RpcError::internal_error())
+		// 	}
+		// ).boxed().compat());
+
+		// tests
 
 		let pkey = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -400,14 +421,6 @@ impl BlockchainSigner for RemoteSignerServer {
 
 		// let key_type = key_type.as_str().try_into().map_err(|_| Error::BadKeyType)?;
 		// Ok(SyncCryptoStore::has_keys(&*self.keystore, &[(public_key.to_vec(), key_type)]));
-
-		// Box::new(self.send_request(RequestMethod::HasKeys(&[(public_key.to_vec(), key_types::AURA)])).map(|response|
-		// 		if let Ok(KeystoreResponse::HasKeys(exists)) = response {
-		// 			Ok(exists)
-		// 		} else {
-		// 			Ok(false)
-		// 		}
-		// 	).boxed().compat());
 
 		let reply = blockchain_signer::SignDataReply {
 			signature: pkey,
@@ -435,9 +448,10 @@ impl BlockchainSigner for RemoteSignerServer {
 
 		let reply = blockchain_signer::SignVrfReply {};
 
-		Ok(Response::new(reply)) // Send back our formatted greeting
+		Ok(Response::new(reply))
 	}
 
+	// ToDo: remove old rpc functions
 	// fn sr25519_public_keys(&self, id: KeyTypeId) -> BoxFuture<Vec<sr25519::Public>> {
 	// 	let receiver = self.send_request(RequestMethod::Sr25519PublicKeys(id));
 	// 	Box::new(receiver.map(|e| match e {
